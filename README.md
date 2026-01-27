@@ -4,3 +4,5 @@ I've uploaded projects that I've worked on and some that I made to learn from. T
 
 ## Simple Boids Model Visual
 Previously named ChineseFood.py because I made a bet with someone that I couldnt make it in a day, we bet chinese food on it. I made just to show my understanding and how I can apply it to my Graduate Thesis of an Autonomous Drone Swarm
+
+[Link to Boids Model Visual](https://github.com/mateostipe/Github-Portfolio/blob/main/SimpleBoidsModelExample.py)
