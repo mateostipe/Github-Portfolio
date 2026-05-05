@@ -4,29 +4,31 @@ import math
 import pygame
 import time
 from pygame.math import Vector2
+import numpy as np
 
 # ---------- Parameters ----------
-WIDTH, HEIGHT = 1200, 800
-NUM_BOIDS = 100
+WIDTH, HEIGHT = 1400, 700 #2400, 1600
+NUM_BOIDS = 50
 NUM_LEADERS = 1
 MAX_SPEED = 2.0
 MAX_FORCE = 0.05
-L_MAX_SPEED = 1.8
+L_MAX_SPEED = 1.5
 
-SEPARATION_RADIUS = 30
-ALIGNMENT_RADIUS = 50
-COHESION_RADIUS = 60
+SEPARATION_RADIUS = 60
+ALIGNMENT_RADIUS = 80
+COHESION_RADIUS = 100
 LEADER_RADIUS = 200
 
-SEPARATION_WEIGHT = 5.0
-ALIGNMENT_WEIGHT = 1
+SEPARATION_WEIGHT = 4.0
+ALIGNMENT_WEIGHT = 1.5
 COHESION_WEIGHT = 1.0
-LEADER_WEIGHT = 3.0
+LEADER_WEIGHT = 1.0
 
 BOID_SIZE = 8
 BG_COLOR = (30, 30, 30)
 BOID_COLOR = (200, 200, 220)
 LEADER_COLOR = (255, 0, 0)
+REWARD_RAD = 130
 FPS = 60
 
 # --------------------------------
@@ -59,30 +61,20 @@ class Leader:
         p2 = Vector2(-BOID_SIZE * 0.6, BOID_SIZE * 0.6).rotate_rad(angle) + self.pos
         p3 = Vector2(-BOID_SIZE * 0.6, -BOID_SIZE * 0.6).rotate_rad(angle) + self.pos
         pygame.draw.polygon(surface, LEADER_COLOR, [p1, p2, p3])
+        #pygame.draw.circle(surface, (255, 255, 0), self.pos, REWARD_RAD, 1)  # Draw reward radius
 
     def update_pathplan(self):
-        if self.pos.x < self.Corners[0][0] and not self.pos.y < self.Corners[0][1]:
-            self.vel = Vector2(0,-L_MAX_SPEED)
-        elif self.pos.y < self.Corners[0][1] and not self.pos.x > self.Corners[1][0]:
-            self.vel = Vector2(L_MAX_SPEED,0)
-        if self.pos.x > self.Corners[1][0] and not self.pos.y > self.Corners[1][1]:
-            self.vel = Vector2(0,L_MAX_SPEED)
-        elif self.pos.y > self.Corners[1][1] and not self.pos.x < self.Corners[0][0]:
-            self.vel = Vector2(-L_MAX_SPEED,0)
+        center = Vector2(WIDTH / 2, HEIGHT / 2)
+        radius = 150
+        angle = math.atan2(self.pos.y - center.y, self.pos.x - center.x)
+        #angle += 0.01  # rotation speed
+        #self.pos.x = center.x + radius * math.cos(angle)
+        #self.pos.y = center.y + radius * math.sin(angle)
+        #self.vel = Vector2(math.cos(angle + math.pi / 2), math.sin(angle + math.pi / 2)) * L_MAX_SPEED
+        if self.vel.length() > self.max_speed:
+            self.vel.scale_to_length(self.max_speed)
+        
            
-            
-        
-        
-        
-        
-        
-
-
-
-
-
-
-        
 
 class Boid:
     def __init__(self, x, y):
@@ -233,11 +225,32 @@ class Boid:
         p3 = Vector2(-BOID_SIZE * 0.6, -BOID_SIZE * 0.6).rotate_rad(angle) + self.pos
         pygame.draw.polygon(surface, BOID_COLOR, [p1, p2, p3])
 
+distance_mx = []
+def update_distance_mx(boids,lead_boid):
+    distance_mx.clear()
+    for i in range(len(boids)):
+        
+        for j in range(len(boids)):
+            if i != j and i < j:
+                distance_mx.append(boids[i].pos.distance_to(boids[j].pos))
+        lead_dis = boids[i].pos.distance_to(lead_boid[0].pos)
+        distance_mx.append(lead_dis)
+    matrix_min = np.min(distance_mx)
+    matrix_max = np.max(distance_mx)
+    for i in range(len(distance_mx)):
+        distance_mx[i] = (distance_mx[i] - matrix_min) / (matrix_max - matrix_min)  # Normalize to [0, 1]
+                
+velocity_mx = []
+def update_velocity_mx(boids):
+    velocity_mx.clear()
+    for i in range(len(boids)):
+        velocity_mx.append(boids[i].vel)
+
 def create_boids(n):
     return [Boid(random.uniform(0, WIDTH), random.uniform(0, HEIGHT)) for _ in range(n)]
 
 def create_leaders(n):
-    return [Leader(WIDTH/2,HEIGHT/2) for _ in range(n)]
+    return [Leader(WIDTH/3,HEIGHT/2) for _ in range(n)]
 
 def main():
     pygame.init()
@@ -306,7 +319,7 @@ def main():
         #screen.blit(fps_text, (10, 10))
         #screen.blit(count_text, (10, 30))
         #screen.blit(instr_text, (10, HEIGHT - 30))
-
+    
         pygame.display.flip()
         end = time.time()
         #print(end)
@@ -315,6 +328,13 @@ def main():
 
     pygame.quit()
     if not TESTING:
+        update_distance_mx(boids,lead_boid)
+        update_velocity_mx(boids)
+        #print(distance_mx)
+        #print(len(distance_mx))
+        print(velocity_mx)
+        print(len(velocity_mx))
+
         sys.exit()
     
 TESTING = False
